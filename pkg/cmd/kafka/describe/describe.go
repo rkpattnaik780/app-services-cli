@@ -1,6 +1,7 @@
 package describe
 
 import (
+	"os"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"github.com/bf2fc6cc711aee1a0c2a/cli/pkg/cmd/factory"
 	"github.com/bf2fc6cc711aee1a0c2a/cli/pkg/cmdutil"
 	"github.com/bf2fc6cc711aee1a0c2a/cli/pkg/connection"
+	"github.com/bf2fc6cc711aee1a0c2a/cli/pkg/dump"
 	sdkkafka "github.com/bf2fc6cc711aee1a0c2a/cli/pkg/sdk/kafka"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -91,7 +93,7 @@ func runDescribe(opts *options) error {
 	switch opts.outputFormat {
 	case "json":
 		data, _ := json.MarshalIndent(response, "", cmdutil.DefaultJSONIndent)
-		fmt.Print(string(data))
+		_ = dump.Pretty(os.Stderr, data)
 	case "yaml", "yml":
 		data, _ := yaml.Marshal(response)
 		fmt.Print(string(data))
