@@ -100,7 +100,7 @@ func runBind(opts *Options) error {
 
 	// Demo values
 	if opts.namespace == "" {
-		opts.namespace = "wtrocki-plugin-sandbox"
+		opts.namespace = "wtrocki-rhoas-demo"
 	}
 
 	appName := "nodejs-sample"
