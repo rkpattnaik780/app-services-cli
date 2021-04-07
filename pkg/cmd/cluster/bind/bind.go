@@ -25,6 +25,7 @@ type Options struct {
 
 	forceCreationWithoutAsk bool
 	ignoreContext           bool
+	appName                 string
 	selectedKafka           string
 }
 
@@ -55,6 +56,7 @@ func NewBindCommand(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&opts.kubeconfigLocation, "kubeconfig", "", "", localizer.MustLocalizeFromID("cluster.common.flag.kubeconfig.description"))
+	cmd.Flags().StringVarP(&opts.appName, "appName", "", "", "Name of the application to bind")
 	cmd.Flags().StringVarP(&opts.namespace, "namespace", "n", "", localizer.MustLocalizeFromID("cluster.common.flag.namespace.description"))
 	cmd.Flags().BoolVarP(&opts.forceCreationWithoutAsk, "yes", "y", false, localizer.MustLocalizeFromID("cluster.common.flag.yes.description"))
 	cmd.Flags().BoolVarP(&opts.ignoreContext, "ignore-context", "", false, localizer.MustLocalizeFromID("cluster.common.flag.ignoreContext.description"))
@@ -103,9 +105,11 @@ func runBind(opts *Options) error {
 		opts.namespace = "wtrocki-rhoas-demo"
 	}
 
-	appName := "nodejs-sample"
+	if opts.appName == "" {
+		opts.appName = "nodejs-sample"
+	}
 
-	err = RunSBOBind(*kafkaInstance.Name, opts.namespace, appName)
+	err = RunSBOBind(*kafkaInstance.Name, opts.namespace, opts.appName)
 
 	return err
 }
