@@ -1,12 +1,11 @@
 package bind
 
 import (
+	"context"
 	"errors"
-	"fmt"
 
 	"github.com/bf2fc6cc711aee1a0c2a/cli/internal/config"
 	"github.com/bf2fc6cc711aee1a0c2a/cli/internal/localizer"
-	"github.com/bf2fc6cc711aee1a0c2a/cli/pkg/cluster"
 	"github.com/bf2fc6cc711aee1a0c2a/cli/pkg/cmd/factory"
 	"github.com/bf2fc6cc711aee1a0c2a/cli/pkg/connection"
 	"github.com/bf2fc6cc711aee1a0c2a/cli/pkg/iostreams"
@@ -38,10 +37,10 @@ func NewBindCommand(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:     "",
-		Short:   "Create service binding for current kafka",
-		Long:    "",
-		Example: "",
+		Use:     "bind",
+		Short:   "Connect your service with your application",
+		Long:    "Command allows you to connect services created by connect command to your application",
+		Example: "rhoas cluster bind",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if opts.ignoreContext == true && !opts.IO.CanPrompt() {
 				return errors.New(localizer.MustLocalize(&localizer.Config{
@@ -92,15 +91,21 @@ func runBind(opts *Options) error {
 		opts.selectedKafka = cfg.Services.Kafka.ClusterID
 	}
 
-	arguments := &cluster.ConnectArguments{
-		IgnoreContext: opts.ignoreContext,
-		SelectedKafka: opts.selectedKafka,
-		Namespace:     opts.namespace,
+	api := connection.API()
+	kafkaInstance, _, error := api.Kafka().GetKafkaById(context.Background(), opts.selectedKafka).Execute()
+
+	if error.Error() != "" {
+		return error
 	}
 
-	fmt.Sprintln(arguments)
+	// Demo values
+	if opts.namespace == "" {
+		opts.namespace = "wtrocki-plugin-sandbox"
+	}
 
-	err = RunSBOBind(opts.selectedKafka, opts.namespace, "nodejs-sample")
+	appName := "nodejs-sample"
+
+	err = RunSBOBind(*kafkaInstance.Name, opts.namespace, appName)
 
 	return err
 }

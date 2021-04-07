@@ -20,6 +20,8 @@ import (
 )
 
 func RunSBOBind(serviceName string, ns string, appName string) error {
+	fmt.Printf("Dectected single deployment in %v namespace", ns)
+	fmt.Printf("Binding %v with %v app \n", serviceName, appName)
 	serviceRef := v1alpha1.Service{
 		NamespacedRef: v1alpha1.NamespacedRef{
 			Ref: v1alpha1.Ref{
@@ -39,11 +41,11 @@ func RunSBOBind(serviceName string, ns string, appName string) error {
 			Name:     appName,
 		},
 	}
-	boolFalse := false
+	boolFalse := true
 	now := time.Now()
 	sb := &v1alpha1.ServiceBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("binding-%v", now.Unix()),
+			Name:      fmt.Sprintf("%v-%v", serviceName, now.Unix()),
 			Namespace: ns,
 		},
 		Spec: v1alpha1.ServiceBindingSpec{
@@ -75,6 +77,7 @@ func RunSBOBind(serviceName string, ns string, appName string) error {
 	if err != nil {
 		return err
 	}
+	fmt.Printf("Binding %v with %v app succeeded\n", serviceName, appName)
 	return nil
 }
 

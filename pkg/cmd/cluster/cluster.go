@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"github.com/bf2fc6cc711aee1a0c2a/cli/internal/localizer"
+	"github.com/bf2fc6cc711aee1a0c2a/cli/pkg/cmd/cluster/bind"
 	"github.com/bf2fc6cc711aee1a0c2a/cli/pkg/cmd/cluster/connect"
 	"github.com/bf2fc6cc711aee1a0c2a/cli/pkg/cmd/cluster/status"
 	"github.com/bf2fc6cc711aee1a0c2a/cli/pkg/cmd/factory"
@@ -20,6 +21,7 @@ func NewClusterCommand(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(
 		status.NewStatusCommand(f),
 		connect.NewConnectCommand(f),
+		bind.NewBindCommand(f),
 	)
 
 	return cmd
