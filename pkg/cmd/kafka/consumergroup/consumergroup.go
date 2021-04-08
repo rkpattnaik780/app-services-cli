@@ -3,6 +3,7 @@ package consumergroup
 import (
 	"github.com/bf2fc6cc711aee1a0c2a/cli/internal/localizer"
 	"github.com/bf2fc6cc711aee1a0c2a/cli/pkg/cmd/factory"
+	"github.com/bf2fc6cc711aee1a0c2a/cli/pkg/cmd/kafka/consumergroup/describe"
 	"github.com/bf2fc6cc711aee1a0c2a/cli/pkg/cmd/kafka/consumergroup/list"
 	"github.com/spf13/cobra"
 )
@@ -19,6 +20,7 @@ func NewConsumerGroupCommand(f *factory.Factory) *cobra.Command {
 
 	cmd.AddCommand(
 		list.NewListConsumerGroupCommand(f),
+		describe.NewDescribeConsumerGroupCommand(f),
 	)
 
 	return cmd
