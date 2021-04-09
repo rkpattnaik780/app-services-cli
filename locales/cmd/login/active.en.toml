@@ -73,7 +73,7 @@ one = 'You are now logged in to MAS-SSO as <span style="font-weight:700">{{.User
 
 [login.error.schemeMissingFromUrl]
 description = 'Error message for when scheme is missing from the Auth URL'
-one = 'scheme missing from URL "{{.URL}}". Please add either "https" or "https"'
+one = 'scheme missing from URL "{{.URL}}". Please add either "http" or "https"'
 
 [login.log.debug.createdAuthorizationUrl]
 description = 'Debug message to show the authorization URL'

@@ -121,6 +121,14 @@ func runCmd(opts *Options) error {
 					"Operation": "view",
 				},
 			}))
+		case 404:
+			return errors.New(localizer.MustLocalize(&localizer.Config{
+				MessageID: "kafka.consumerGroup.common.error.notFoundError",
+				TemplateData: map[string]interface{}{
+					"ConsumerGroupID": opts.id,
+					"InstanceName":    kafkaInstance.GetName(),
+				},
+			}))
 		case 500:
 			return fmt.Errorf("%v: %w", localizer.MustLocalizeFromID("kafka.consumerGroup.common.error.internalServerError"), consumerGroupErr)
 		case 503:

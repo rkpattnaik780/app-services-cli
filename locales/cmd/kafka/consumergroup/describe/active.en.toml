@@ -12,7 +12,7 @@ Print detailed information for a consumer group and its members.
 [kafka.consumerGroup.describe.cmd.example]
 one = '''
 # describe a consumer group
-$ rhoas kafka consumergroup describe --id consumer_group_1 -o json
+$ rhoas kafka consumergroup describe consumer_group_1 -o json
 '''
 
 [kafka.consumerGroup.describe.output.id]
