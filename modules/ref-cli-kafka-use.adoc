@@ -1,44 +1,56 @@
-== rhoas kafka use
+ifdef::env-github,env-browser[:context: cmd]
+[id='ref-rhoas-kafka-use_{context}']
+= rhoas kafka use
 
-ifdef::env-github,env-browser[:relfilesuffix: .adoc]
-
+[role="_abstract"]
 Set the current Apache Kafka instance
 
-=== Synopsis
+[discrete]
+== Synopsis
 
 Select an Apache Kafka instance and set it as the current instance.
+You can specify a Apache Kafka instance by --name or --id.
 
-When you set the Kafka instance to be used, it is set as the current instance for all "rhoas kafka" commands.
+When you set the Kafka instance to be used, it is set as the current instance for all rhoas kafka topics and rhoas kafka consumer-group commands.
 
-When an ID is not specified in other Kafka commands, the current Kafka instance is used.
 
 
 ....
 rhoas kafka use [flags]
 ....
 
-=== Examples
+[discrete]
+== Examples
 
 ....
 # set a kafka instance to be the current instance
-$ rhoas kafka use --id=1iSY6RQ3JKI8Q0OTmjQFd3ocFRg,
+$ rhoas kafka use --name=my-kafka
+
+# set a kafka instance to be the current instance
+$ rhoas kafka use --id=1iSY6RQ3JKI8Q0OTmjQFd3ocFRg
 
 ....
 
-=== Options
+[discrete]
+== Options
 
-....
-      --id string   Unique ID of the Kafka instance you want to set as the current instance.
-....
+      `--id` _string_::     Unique ID of the Kafka instance you want to set as the current instance
+      `--name` _string_::   Name of the Kafka instance you want to set as the current instance
 
-=== Options inherited from parent commands
+[discrete]
+== Options inherited from parent commands
 
-....
-  -d, --debug   Enable debug mode
-  -h, --help    Show help for a command
-....
+  `-h`, `--help`::      Show help for a command
+  `-v`, `--verbose`::   Enable verbose mode
 
-=== SEE ALSO
+[discrete]
+== See also
 
-* link:rhoas_kafka{relfilesuffix}[rhoas kafka]	 - Create, view, use, and manage your Apache Kafka instances
+
+ifdef::env-github,env-browser[]
+* link:rhoas_kafka.adoc#rhoas-kafka[rhoas kafka]	 - Create, view, use, and manage your Kafka instances
+endif::[]
+ifdef::pantheonenv[]
+* link:{path}#ref-rhoas-kafka_{context}[rhoas kafka]	 - Create, view, use, and manage your Kafka instances
+endif::[]
 

@@ -1,10 +1,12 @@
-== rhoas kafka topic update
+ifdef::env-github,env-browser[:context: cmd]
+[id='ref-rhoas-kafka-topic-update_{context}']
+= rhoas kafka topic update
 
-ifdef::env-github,env-browser[:relfilesuffix: .adoc]
-
+[role="_abstract"]
 Update a Kafka topic
 
-=== Synopsis
+[discrete]
+== Synopsis
 
 Update a topic in the current Apache Kafka instance.
 
@@ -13,29 +15,38 @@ Update a topic in the current Apache Kafka instance.
 rhoas kafka topic update [flags]
 ....
 
-=== Examples
+[discrete]
+== Examples
 
 ....
-# update the number of replicas for a topic
-$ rhoas kafka topic update topic-1 --replication-factor 
+# update the message retention period for a topic
+$ rhoas kafka topic update --name topic-1 --retention-ms -1
 
 ....
 
-=== Options
+[discrete]
+== Options
 
-....
-  -o, --output string         Format in which to display the Kafka topic. Choose from: "json", "yml", "yaml" (default "json")
-      --retention-ms string   The period of time in milliseconds the broker will retain a partition log before deleting it
-....
+      `--cleanup-policy` _string_::    Determines whether log messages are deleted, compacted, or both
+      `--name` _string_::              Topic name
+      `--partitions` _string_::        The number of partitions in the topic
+      `--retention-bytes` _string_::   The maximum total size of a partition log segments before old log segments are deleted to free up space
+      `--retention-ms` _string_::      The period of time in milliseconds the broker will retain a partition log before deleting it
 
-=== Options inherited from parent commands
+[discrete]
+== Options inherited from parent commands
 
-....
-  -d, --debug   Enable debug mode
-  -h, --help    Show help for a command
-....
+  `-h`, `--help`::      Show help for a command
+  `-v`, `--verbose`::   Enable verbose mode
 
-=== SEE ALSO
+[discrete]
+== See also
 
-* link:rhoas_kafka_topic{relfilesuffix}[rhoas kafka topic]	 - Create, describe, update, list and delete topics
+
+ifdef::env-github,env-browser[]
+* link:rhoas_kafka_topic.adoc#rhoas-kafka-topic[rhoas kafka topic]	 - Create, describe, update, list and delete topics
+endif::[]
+ifdef::pantheonenv[]
+* link:{path}#ref-rhoas-kafka-topic_{context}[rhoas kafka topic]	 - Create, describe, update, list and delete topics
+endif::[]
 

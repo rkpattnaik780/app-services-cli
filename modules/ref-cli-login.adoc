@@ -1,21 +1,28 @@
-== rhoas login
+ifdef::env-github,env-browser[:context: cmd]
+[id='ref-rhoas-login_{context}']
+= rhoas login
 
-ifdef::env-github,env-browser[:relfilesuffix: .adoc]
-
+[role="_abstract"]
 Log in to RHOAS
 
-=== Synopsis
+[discrete]
+== Synopsis
 
 Log in securely to RHOAS through a web browser.
 
 This command opens your web browser, where you can enter your credentials.
+
+When using the rhoas CLI in an environment without a web browser, 
+you can log in using an offline-token by passing the "--token" flag, which can be obtained at https://console.redhat.com/openshift/token.
+Note: token-based login is not supported by the Kafka "topic" and "consumer-group" subcommands.
 
 
 ....
 rhoas login [flags]
 ....
 
-=== Examples
+[discrete]
+== Examples
 
 ....
 # securely log in to RHOAS by using a web browser
@@ -24,30 +31,37 @@ $ rhoas login
 # print the authentication URL instead of automatically opening the browser
 $ rhoas login --print-sso-url
 
-....
-
-=== Options
-
-....
-      --api-gateway string    URL of the API gateway. The value can be the URL or an alias. Valid aliases are: production|staging|integration|development. (default "https://api.stage.openshift.com")
-      --auth-url string       The URL of the SSO Authentication server. (default "https://sso.redhat.com/auth/realms/redhat-external")
-      --client-id string      OpenID client identifier (default "rhoas-cli-prod")
-      --insecure              Enables insecure communication with the server. This disables verification of TLS certificates and host names.
-      --mas-auth-url string   The URL of the MAS-SSO Authentication server. (default "https://keycloak-mas-sso-stage.apps.app-sre-stage-0.k3s7.p1.openshiftapps.com/auth/realms/rhoas")
-      --print-sso-url         Prints the console login URL, which you can use to log in to RHOAS from a different web browser. This is useful if you need to log in with different credentials than the credentials you used in your default web browser.
-      --scope stringArray     Override the default OpenID scope. To specify multiple scopes, use a separate --scope for each scope. (default [openid])
-      --skip-mas-login        Skip logging in to MAS-SSO
-  -t, --token string          Allows you to log in using an offline token, which can be obtained at https://cloud.redhat.com/openshift/token.
-....
-
-=== Options inherited from parent commands
+# log in using an offline token
+$ rhoas login --token f5cgc...
 
 ....
-  -d, --debug   Enable debug mode
-  -h, --help    Show help for a command
-....
 
-=== SEE ALSO
+[discrete]
+== Options
 
-* link:rhoas{relfilesuffix}[rhoas]	 - RHOAS CLI
+      `--api-gateway` _string_::    URL of the API gateway (default "https://api.openshift.com")
+      `--auth-url` _string_::       The URL of the SSO Authentication server (default "https://sso.redhat.com/auth/realms/redhat-external")
+      `--client-id` _string_::      OpenID client identifier (default "rhoas-cli-prod")
+      `--insecure`::                Enables insecure communication with the server by disabling TLS certificate and host name verification
+      `--mas-auth-url` _string_::   The URL of the identity.api.openshift.com Authentication server (default "https://identity.api.openshift.com/auth/realms/rhoas")
+      `--print-sso-url`::           Prints the console login URL, which you can use to log in to RHOAS from a different web browser (this is useful if you need to log in with different credentials than the credentials you used in your default web browser)
+      `--scope` _stringArray_::     Override the default OpenID scope (to specify multiple scopes, use a separate --scope for each scope) (default [openid])
+  `-t`, `--token` _string_::        Log in using an offline token, which can be obtained at https://console.redhat.com/openshift/token
+
+[discrete]
+== Options inherited from parent commands
+
+  `-h`, `--help`::      Show help for a command
+  `-v`, `--verbose`::   Enable verbose mode
+
+[discrete]
+== See also
+
+
+ifdef::env-github,env-browser[]
+* link:rhoas.adoc#rhoas[rhoas]	 - RHOAS CLI
+endif::[]
+ifdef::pantheonenv[]
+* link:{path}#ref-rhoas_{context}[rhoas]	 - RHOAS CLI
+endif::[]
 
