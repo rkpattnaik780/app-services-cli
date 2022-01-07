@@ -33,7 +33,7 @@ jobs:
 
       -
         name: Build docker image
-        run: docker build . --file Dockerfile --tag rhoas_cli_image:latest
+        run: docker build . --file Dockerfile --tag quay.io/${{secrets.QUAY_USER}}/rhoas
 
       -
         name: Push docker image
