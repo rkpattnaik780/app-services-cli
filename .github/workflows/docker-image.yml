@@ -29,7 +29,7 @@ jobs:
         env:
           QUAY_USER: ${{secrets.QUAY_USER}}
           QUAY_PASSWORD: ${{secrets.QUAY_PASSWORD}}
-        run: docker login -u $QUAY_USER $QUAY_PASSWORD
+        run: docker login quay.io -u "$QUAY_USER" -p "$QUAY_PASSWORD"
 
       -
         name: Build docker image
