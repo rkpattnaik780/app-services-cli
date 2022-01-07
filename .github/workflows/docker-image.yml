@@ -1,0 +1,40 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ dockerize_cli ]
+  pull_request:
+    branches: [ dockerize_cli ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - id: set-version
+        uses: actions/github-script@v4
+        with:
+          script: |
+            const version = context.ref.replace(/^refs\/tags\//, '').replace(/^v/, '')
+            core.setOutput('version', version)
+
+      -
+        name: docker login
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+        env:
+          QUAY_USER: ${{secrets.QUAY_USER}}
+          QUAY_PASSWORD: ${{secrets.QUAY_PASSWORD}}
+        run: docker login -u $QUAY_USER $QUAY_PASSWORD
+
+      -
+        name: Build docker image
+        run: docker build . --file Dockerfile --tag rhoas_cli_image:${{steps.set-version.outputs.version}}
+
+      -
+        name: Push docker image
+        run: docker push quay.io/${{secrets.QUAY_USER}}/rhoas
