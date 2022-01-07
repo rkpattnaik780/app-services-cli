@@ -33,7 +33,7 @@ jobs:
 
       -
         name: Build docker image
-        run: docker build . --file Dockerfile --tag rhoas_cli_image:${{steps.set-version.outputs.version}}
+        run: docker build . --file Dockerfile --tag rhoas_cli_image:latest
 
       -
         name: Push docker image
