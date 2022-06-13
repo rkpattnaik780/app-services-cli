@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/redhat-developer/app-services-cli/pkg/shared/connection"
-	"github.com/redhat-developer/app-services-cli/pkg/shared/factory"
 
 	amsclient "github.com/redhat-developer/app-services-sdk-go/accountmgmt/apiv1/client"
 
@@ -41,8 +40,9 @@ type QuotaSpec struct {
 	BillingModel string
 }
 
-func GetUserSupportedInstanceType(ctx context.Context, spec *remote.AmsConfig, conn connection.Connection) (quota *QuotaSpec, err error) {
-	userInstanceTypes, err := GetUserSupportedInstanceTypes(ctx, spec, conn)
+func GetUserSupportedInstanceType(quotaCostList *amsclient.QuotaCostList, spec *remote.AmsConfig) (quota *QuotaSpec, err error) {
+
+	userInstanceTypes, err := GetUserSupportedInstanceTypes(quotaCostList, spec)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func GetUserSupportedInstanceType(ctx context.Context, spec *remote.AmsConfig, c
 	return amsType, nil
 }
 
-func fetchOrgQuotaCost(ctx context.Context, conn connection.Connection) (*amsclient.QuotaCostList, error) {
+func FetchOrgQuotaCost(ctx context.Context, conn connection.Connection) (*amsclient.QuotaCostList, error) {
 	orgId, err := GetOrganizationID(ctx, conn)
 	if err != nil {
 		return nil, err
@@ -68,15 +68,10 @@ func fetchOrgQuotaCost(ctx context.Context, conn connection.Connection) (*amscli
 
 }
 
-func GetUserSupportedInstanceTypes(ctx context.Context, spec *remote.AmsConfig, conn connection.Connection) (quota []QuotaSpec, err error) {
-
-	quotaCostGet, err := fetchOrgQuotaCost(ctx, conn)
-	if err != nil {
-		return nil, err
-	}
+func GetUserSupportedInstanceTypes(quotaCostList *amsclient.QuotaCostList, spec *remote.AmsConfig) (quota []QuotaSpec, err error) {
 
 	var quotas []QuotaSpec
-	for _, quota := range quotaCostGet.GetItems() {
+	for _, quota := range quotaCostList.GetItems() {
 		quotaResources := quota.GetRelatedResources()
 		for i := range quotaResources {
 			quotaResource := quotaResources[i]
@@ -146,19 +141,9 @@ func GetOrganizationID(ctx context.Context, conn connection.Connection) (account
 	return account.Organization.GetId(), nil
 }
 
-func GetValidMarketplaceAcctIDs(ctx context.Context, connectionFunc factory.ConnectionFunc, marketplace string) (marketplaceAcctIDs []string, err error) {
+func GetValidMarketplaceAcctIDs(quotaCostList *amsclient.QuotaCostList, marketplace string) (marketplaceAcctIDs []string, err error) {
 
-	conn, err := connectionFunc(connection.DefaultConfigSkipMasAuth)
-	if err != nil {
-		return nil, err
-	}
-
-	quotaCostGet, err := fetchOrgQuotaCost(ctx, conn)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, quota := range quotaCostGet.GetItems() {
+	for _, quota := range quotaCostList.GetItems() {
 		if len(quota.GetCloudAccounts()) > 0 {
 			for _, cloudAccount := range quota.GetCloudAccounts() {
 				if marketplace != "" {
@@ -175,19 +160,9 @@ func GetValidMarketplaceAcctIDs(ctx context.Context, connectionFunc factory.Conn
 	return unique(marketplaceAcctIDs), err
 }
 
-func GetValidMarketplaces(ctx context.Context, connectionFunc factory.ConnectionFunc) (marketplaces []string, err error) {
+func GetValidMarketplaces(quotaCostList *amsclient.QuotaCostList) (marketplaces []string, err error) {
 
-	conn, err := connectionFunc(connection.DefaultConfigSkipMasAuth)
-	if err != nil {
-		return nil, err
-	}
-
-	quotaCostGet, err := fetchOrgQuotaCost(ctx, conn)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, quota := range quotaCostGet.GetItems() {
+	for _, quota := range quotaCostList.GetItems() {
 		if len(quota.GetCloudAccounts()) > 0 {
 			for _, cloudAccount := range quota.GetCloudAccounts() {
 				marketplaces = append(marketplaces, cloudAccount.GetCloudProviderId())

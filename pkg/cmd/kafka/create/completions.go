@@ -46,7 +46,12 @@ func GetKafkaSizeCompletionValues(f *factory.Factory, providerID string, regionI
 		return nil, directive
 	}
 
-	userInstanceType, _ := accountmgmtutil.GetUserSupportedInstanceType(f.Context, &constants.Kafka.Ams, conn)
+	quotaCostList, err := accountmgmtutil.FetchOrgQuotaCost(f.Context, conn)
+	if err != nil {
+		return nil, directive
+	}
+
+	userInstanceType, _ := accountmgmtutil.GetUserSupportedInstanceType(quotaCostList, &constants.Kafka.Ams)
 
 	// Not including quota in this request as it takes very long time to list quota for all regions in suggestion mode
 	validRegions, _ = FetchValidKafkaSizesLabels(f, providerID, regionId, *userInstanceType)
@@ -58,7 +63,14 @@ func GetKafkaSizeCompletionValues(f *factory.Factory, providerID string, regionI
 func GetMarketplaceAcctIdCompletionValues(f *factory.Factory) (validMarketplaceAcctIDs []string, directive cobra.ShellCompDirective) {
 	directive = cobra.ShellCompDirectiveNoSpace
 
-	validMarketplaceAcctIDs, _ = accountmgmtutil.GetValidMarketplaceAcctIDs(f.Context, f.Connection, "")
+	conn, err := f.Connection(connection.DefaultConfigSkipMasAuth)
+	if err != nil {
+		return nil, directive
+	}
+
+	quotaCostList, _ := accountmgmtutil.FetchOrgQuotaCost(f.Context, conn)
+
+	validMarketplaceAcctIDs, _ = accountmgmtutil.GetValidMarketplaceAcctIDs(quotaCostList, "")
 
 	return validMarketplaceAcctIDs, directive
 }
@@ -67,7 +79,14 @@ func GetMarketplaceAcctIdCompletionValues(f *factory.Factory) (validMarketplaceA
 func GetMarketplaceCompletionValues(f *factory.Factory) (validMarketplaces []string, directive cobra.ShellCompDirective) {
 	directive = cobra.ShellCompDirectiveNoSpace
 
-	validMarketplaces, _ = accountmgmtutil.GetValidMarketplaces(f.Context, f.Connection)
+	conn, err := f.Connection(connection.DefaultConfigSkipMasAuth)
+	if err != nil {
+		return nil, directive
+	}
+
+	quotaCostList, _ := accountmgmtutil.FetchOrgQuotaCost(f.Context, conn)
+
+	validMarketplaces, _ = accountmgmtutil.GetValidMarketplaces(quotaCostList)
 
 	return validMarketplaces, directive
 }

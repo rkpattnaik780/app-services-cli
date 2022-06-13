@@ -112,7 +112,18 @@ func NewCreateCommand(f *factory.Factory) *cobra.Command {
 			}
 
 			if !opts.bypassChecks {
-				validMarketplaces, err := accountmgmtutil.GetValidMarketplaces(f.Context, f.Connection)
+
+				conn, err := f.Connection(connection.DefaultConfigSkipMasAuth)
+				if err != nil {
+					return err
+				}
+
+				quotaCostList, err := accountmgmtutil.FetchOrgQuotaCost(f.Context, conn)
+				if err != nil {
+					return err
+				}
+
+				validMarketplaces, err := accountmgmtutil.GetValidMarketplaces(quotaCostList)
 				if err != nil {
 					return err
 				}
@@ -121,7 +132,7 @@ func NewCreateCommand(f *factory.Factory) *cobra.Command {
 					return flagutil.InvalidValueError(FlagMarketPlace, opts.marketplace, validMarketplaces...)
 				}
 
-				validMarketplaceAcctIDs, err := accountmgmtutil.GetValidMarketplaceAcctIDs(f.Context, f.Connection, opts.marketplace)
+				validMarketplaceAcctIDs, err := accountmgmtutil.GetValidMarketplaceAcctIDs(quotaCostList, opts.marketplace)
 				if err != nil {
 					return err
 				}
@@ -212,7 +223,12 @@ func runCreate(opts *options) error {
 			return nil
 		}
 
-		userInstanceType, err = accountmgmtutil.GetUserSupportedInstanceType(f.Context, &constants.Kafka.Ams, conn)
+		quotaCostList, newErr := accountmgmtutil.FetchOrgQuotaCost(f.Context, conn)
+		if newErr != nil {
+			return newErr
+		}
+
+		userInstanceType, err = accountmgmtutil.GetUserSupportedInstanceType(quotaCostList, &constants.Kafka.Ams)
 		if err != nil || userInstanceType == nil {
 			return f.Localizer.MustLocalizeError("kafka.create.error.userInstanceType.notFound")
 		}
@@ -474,7 +490,17 @@ func promptKafkaPayload(opts *options, userQuotaType accountmgmtutil.QuotaSpec) 
 		}
 	}
 
-	marketplaces, err := accountmgmtutil.GetValidMarketplaces(f.Context, f.Connection)
+	conn, err := f.Connection(connection.DefaultConfigSkipMasAuth)
+	if err != nil {
+		return nil, err
+	}
+
+	quotaCostList, err := accountmgmtutil.FetchOrgQuotaCost(f.Context, conn)
+	if err != nil {
+		return nil, err
+	}
+
+	marketplaces, err := accountmgmtutil.GetValidMarketplaces(quotaCostList)
 	if err != nil {
 		return nil, err
 	}
@@ -484,7 +510,7 @@ func promptKafkaPayload(opts *options, userQuotaType accountmgmtutil.QuotaSpec) 
 			return nil, err
 		}
 
-		marketplaceAcctIDs, err := accountmgmtutil.GetValidMarketplaceAcctIDs(f.Context, f.Connection, answers.Marketplace)
+		marketplaceAcctIDs, err := accountmgmtutil.GetValidMarketplaceAcctIDs(quotaCostList, answers.Marketplace)
 		if err != nil {
 			return nil, err
 		}
