@@ -52,6 +52,7 @@ type options struct {
 
 	marketplaceAcctId string
 	marketplace       string
+	billingModel      string
 
 	outputFormat string
 	autoUse      bool
@@ -111,37 +112,6 @@ func NewCreateCommand(f *factory.Factory) *cobra.Command {
 				return flagutil.InvalidValueError("output", opts.outputFormat, validOutputFormats...)
 			}
 
-			if !opts.bypassChecks {
-
-				conn, err := f.Connection(connection.DefaultConfigSkipMasAuth)
-				if err != nil {
-					return err
-				}
-
-				quotaCostList, err := accountmgmtutil.FetchOrgQuotaCost(f.Context, conn)
-				if err != nil {
-					return err
-				}
-
-				validMarketplaces, err := accountmgmtutil.GetValidMarketplaces(quotaCostList)
-				if err != nil {
-					return err
-				}
-
-				if opts.marketplace != "" && !flagutil.IsValidInput(opts.marketplace, validMarketplaces...) {
-					return flagutil.InvalidValueError(FlagMarketPlace, opts.marketplace, validMarketplaces...)
-				}
-
-				validMarketplaceAcctIDs, err := accountmgmtutil.GetValidMarketplaceAcctIDs(quotaCostList, opts.marketplace)
-				if err != nil {
-					return err
-				}
-
-				if opts.marketplaceAcctId != "" && !flagutil.IsValidInput(opts.marketplaceAcctId, validMarketplaceAcctIDs...) {
-					return flagutil.InvalidValueError(FlagMarketPlaceAcctID, opts.marketplaceAcctId, validMarketplaceAcctIDs...)
-				}
-			}
-
 			return runCreate(opts)
 		},
 	}
@@ -158,6 +128,7 @@ func NewCreateCommand(f *factory.Factory) *cobra.Command {
 	flags.BoolVar(&opts.autoUse, "use", true, f.Localizer.MustLocalize("kafka.create.flag.autoUse.description"))
 	flags.BoolVarP(&opts.wait, "wait", "w", false, f.Localizer.MustLocalize("kafka.create.flag.wait.description"))
 	flags.BoolVarP(&opts.dryRun, "dry-run", "", false, f.Localizer.MustLocalize("kafka.create.flag.dryrun.description"))
+	flags.StringVarP(&opts.billingModel, "billing-model", "", "standard", f.Localizer.MustLocalize("kafka.create.flag.dryrun.description"))
 	flags.AddBypassTermsCheck(&opts.bypassChecks)
 
 	_ = cmd.RegisterFlagCompletionFunc(FlagProvider, func(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
@@ -223,12 +194,12 @@ func runCreate(opts *options) error {
 			return nil
 		}
 
-		quotaCostList, newErr := accountmgmtutil.FetchOrgQuotaCost(f.Context, conn)
-		if newErr != nil {
-			return newErr
+		conn, err := f.Connection(connection.DefaultConfigSkipMasAuth)
+		if err != nil {
+			return err
 		}
 
-		userInstanceType, err = accountmgmtutil.GetUserSupportedInstanceType(quotaCostList, &constants.Kafka.Ams)
+		userInstanceType, err = accountmgmtutil.GetUserSupportedInstanceType(f.Context, &constants.Kafka.Ams, conn)
 		if err != nil || userInstanceType == nil {
 			return f.Localizer.MustLocalizeError("kafka.create.error.userInstanceType.notFound")
 		}
@@ -272,6 +243,8 @@ func runCreate(opts *options) error {
 				provider:            opts.provider,
 				region:              opts.region,
 				size:                opts.size,
+				marketplaceAcctId:   opts.marketplaceAcctId,
+				marketplace:         opts.marketplace,
 				userAMSInstanceType: userInstanceType,
 				f:                   f,
 				constants:           constants,
@@ -293,6 +266,16 @@ func runCreate(opts *options) error {
 				}
 				printSizeWarningIfNeeded(opts.f, opts.size, sizes)
 				payload.SetPlan(mapAmsTypeToBackendType(userInstanceType) + "." + opts.size)
+			}
+
+			err1 = validator.ValidateMarketPlace()
+			if err1 != nil {
+				return err1
+			}
+
+			err1 = validator.ValidateMarketPlaceAcctIDs()
+			if err1 != nil {
+				return err1
 			}
 		}
 
@@ -479,28 +462,21 @@ func promptKafkaPayload(opts *options, userQuotaType accountmgmtutil.QuotaSpec) 
 		answers.Size = sizes[0].GetId()
 	} else {
 		sizeLabels := GetValidKafkaSizesLabels(sizes)
-		planPrompt := &survey.Select{
-			Message: f.Localizer.MustLocalize("kafka.create.input.plan.message"),
-			Options: sizeLabels,
+
+		if len(sizeLabels) > 0 {
+			planPrompt := &survey.Select{
+				Message: f.Localizer.MustLocalize("kafka.create.input.plan.message"),
+				Options: sizeLabels,
+			}
+
+			err = survey.AskOne(planPrompt, &answers.Size)
+			if err != nil {
+				return nil, err
+			}
 		}
-
-		err = survey.AskOne(planPrompt, &answers.Size)
-		if err != nil {
-			return nil, err
-		}
 	}
 
-	conn, err := f.Connection(connection.DefaultConfigSkipMasAuth)
-	if err != nil {
-		return nil, err
-	}
-
-	quotaCostList, err := accountmgmtutil.FetchOrgQuotaCost(f.Context, conn)
-	if err != nil {
-		return nil, err
-	}
-
-	marketplaces, err := accountmgmtutil.GetValidMarketplaces(quotaCostList)
+	marketplaces, err := FetchValidMarketplaces(&userQuotaType)
 	if err != nil {
 		return nil, err
 	}
@@ -510,7 +486,7 @@ func promptKafkaPayload(opts *options, userQuotaType accountmgmtutil.QuotaSpec) 
 			return nil, err
 		}
 
-		marketplaceAcctIDs, err := accountmgmtutil.GetValidMarketplaceAcctIDs(quotaCostList, answers.Marketplace)
+		marketplaceAcctIDs, err := FetchValidMarketplaceAccountIDs(&userQuotaType, answers.Marketplace)
 		if err != nil {
 			return nil, err
 		}

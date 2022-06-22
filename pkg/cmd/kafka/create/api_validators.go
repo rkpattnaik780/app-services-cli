@@ -1,6 +1,7 @@
 package create
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/redhat-developer/app-services-cli/pkg/core/localize"
@@ -13,9 +14,11 @@ import (
 )
 
 type ValidatorInput struct {
-	provider string
-	region   string
-	size     string
+	provider          string
+	region            string
+	size              string
+	marketplace       string
+	marketplaceAcctId string
 
 	userAMSInstanceType *accountmgmtutil.QuotaSpec
 
@@ -115,6 +118,34 @@ func (input *ValidatorInput) ValidateSize() error {
 
 	if !slices.Contains(sizes, input.size) {
 		return input.f.Localizer.MustLocalizeError("kafka.create.error.invalidSize", localize.NewEntry("ValidSizes", sizes))
+	}
+
+	return nil
+}
+
+func (input *ValidatorInput) ValidateMarketPlace() error {
+
+	marketplaces, err := FetchValidMarketplaces(input.userAMSInstanceType)
+	if err != nil {
+		return err
+	}
+
+	if !slices.Contains(marketplaces, input.marketplace) {
+		return errors.New("invalid marketplace")
+	}
+
+	return nil
+}
+
+func (input *ValidatorInput) ValidateMarketPlaceAcctIDs() error {
+
+	marketplaceAcctIDs, err := FetchValidMarketplaceAccountIDs(input.userAMSInstanceType, input.marketplace)
+	if err != nil {
+		return err
+	}
+
+	if !slices.Contains(marketplaceAcctIDs, input.marketplaceAcctId) {
+		return errors.New("invalid marketplace account ID")
 	}
 
 	return nil

@@ -46,12 +46,7 @@ func GetKafkaSizeCompletionValues(f *factory.Factory, providerID string, regionI
 		return nil, directive
 	}
 
-	quotaCostList, err := accountmgmtutil.FetchOrgQuotaCost(f.Context, conn)
-	if err != nil {
-		return nil, directive
-	}
-
-	userInstanceType, _ := accountmgmtutil.GetUserSupportedInstanceType(quotaCostList, &constants.Kafka.Ams)
+	userInstanceType, _ := accountmgmtutil.GetUserSupportedInstanceType(f.Context, &constants.Kafka.Ams, conn)
 
 	// Not including quota in this request as it takes very long time to list quota for all regions in suggestion mode
 	validRegions, _ = FetchValidKafkaSizesLabels(f, providerID, regionId, *userInstanceType)
@@ -68,9 +63,14 @@ func GetMarketplaceAcctIdCompletionValues(f *factory.Factory) (validMarketplaceA
 		return nil, directive
 	}
 
-	quotaCostList, _ := accountmgmtutil.FetchOrgQuotaCost(f.Context, conn)
+	err, constants := remote.GetRemoteServiceConstants(f.Context, f.Logger)
+	if err != nil {
+		return nil, directive
+	}
 
-	validMarketplaceAcctIDs, _ = accountmgmtutil.GetValidMarketplaceAcctIDs(quotaCostList, "")
+	userInstanceType, _ := accountmgmtutil.GetUserSupportedInstanceType(f.Context, &constants.Kafka.Ams, conn)
+
+	validMarketplaceAcctIDs, _ = FetchValidMarketplaceAccountIDs(userInstanceType, "")
 
 	return validMarketplaceAcctIDs, directive
 }
@@ -79,14 +79,19 @@ func GetMarketplaceAcctIdCompletionValues(f *factory.Factory) (validMarketplaceA
 func GetMarketplaceCompletionValues(f *factory.Factory) (validMarketplaces []string, directive cobra.ShellCompDirective) {
 	directive = cobra.ShellCompDirectiveNoSpace
 
+	err, constants := remote.GetRemoteServiceConstants(f.Context, f.Logger)
+	if err != nil {
+		return nil, directive
+	}
+
 	conn, err := f.Connection(connection.DefaultConfigSkipMasAuth)
 	if err != nil {
 		return nil, directive
 	}
 
-	quotaCostList, _ := accountmgmtutil.FetchOrgQuotaCost(f.Context, conn)
+	userInstanceType, _ := accountmgmtutil.GetUserSupportedInstanceType(f.Context, &constants.Kafka.Ams, conn)
 
-	validMarketplaces, _ = accountmgmtutil.GetValidMarketplaces(quotaCostList)
+	validMarketplaces, _ = FetchValidMarketplaces(userInstanceType)
 
 	return validMarketplaces, directive
 }

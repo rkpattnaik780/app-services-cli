@@ -2,7 +2,9 @@ package accountmgmtutil
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/redhat-developer/app-services-cli/pkg/shared/connection"
 
@@ -35,14 +37,15 @@ func CheckTermsAccepted(ctx context.Context, spec *remote.AmsConfig, conn connec
 
 // QuotaSpec - contains quota name and remaining quota count
 type QuotaSpec struct {
-	Name         string
-	Quota        int
-	BillingModel string
+	Name          string
+	Quota         int
+	BillingModel  string
+	CloudAccounts *[]amsclient.CloudAccount
 }
 
-func GetUserSupportedInstanceType(quotaCostList *amsclient.QuotaCostList, spec *remote.AmsConfig) (quota *QuotaSpec, err error) {
+func GetUserSupportedInstanceType(ctx context.Context, spec *remote.AmsConfig, conn connection.Connection) (quota *QuotaSpec, err error) {
 
-	userInstanceTypes, err := GetUserSupportedInstanceTypes(quotaCostList, spec)
+	userInstanceTypes, err := GetUserSupportedInstanceTypes(ctx, spec, conn)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +55,7 @@ func GetUserSupportedInstanceType(quotaCostList *amsclient.QuotaCostList, spec *
 	return amsType, nil
 }
 
-func FetchOrgQuotaCost(ctx context.Context, conn connection.Connection) (*amsclient.QuotaCostList, error) {
+func fetchOrgQuotaCost(ctx context.Context, conn connection.Connection) (*amsclient.QuotaCostList, error) {
 	orgId, err := GetOrganizationID(ctx, conn)
 	if err != nil {
 		return nil, err
@@ -64,23 +67,34 @@ func FetchOrgQuotaCost(ctx context.Context, conn connection.Connection) (*amscli
 		FetchCloudAccounts(true).
 		Execute()
 
+	b, _ := json.Marshal(quotaCostGet)
+	fmt.Println(string(b))
+
 	return &quotaCostGet, err
 
 }
 
-func GetUserSupportedInstanceTypes(quotaCostList *amsclient.QuotaCostList, spec *remote.AmsConfig) (quota []QuotaSpec, err error) {
+func GetUserSupportedInstanceTypes(ctx context.Context, spec *remote.AmsConfig, conn connection.Connection) (quota []QuotaSpec, err error) {
+
+	quotaCostGet, err := fetchOrgQuotaCost(ctx, conn)
+	if err != nil {
+		return nil, err
+	}
 
 	var quotas []QuotaSpec
-	for _, quota := range quotaCostList.GetItems() {
+	for _, quota := range quotaCostGet.GetItems() {
 		quotaResources := quota.GetRelatedResources()
 		for i := range quotaResources {
 			quotaResource := quotaResources[i]
 			if quotaResource.GetResourceName() == spec.ResourceName {
-				if quotaResource.GetProduct() == spec.TrialProductQuotaID {
-					quotas = append(quotas, QuotaSpec{QuotaTrialType, 0, quotaResource.BillingModel})
+				if quotaResource.GetBillingModel() == "marketplace" || quotaResource.GetBillingModel() == "any" {
+					remainingQuota := int(quota.GetAllowed() - quota.GetConsumed())
+					quotas = append(quotas, QuotaSpec{QuotaStandardType, remainingQuota, quotaResource.BillingModel, quota.CloudAccounts})
 				} else if quotaResource.GetProduct() == spec.InstanceQuotaID {
 					remainingQuota := int(quota.GetAllowed() - quota.GetConsumed())
-					quotas = append(quotas, QuotaSpec{QuotaStandardType, remainingQuota, quotaResource.BillingModel})
+					quotas = append(quotas, QuotaSpec{QuotaStandardType, remainingQuota, quotaResource.BillingModel, quota.CloudAccounts})
+				} else if quotaResource.GetProduct() == spec.TrialProductQuotaID {
+					quotas = append(quotas, QuotaSpec{QuotaTrialType, 0, quotaResource.BillingModel, quota.CloudAccounts})
 				}
 			}
 		}
@@ -94,7 +108,7 @@ func GetUserSupportedInstanceTypes(quotaCostList *amsclient.QuotaCostList, spec 
 // This function should not exist but it does represents some requirement that we cannot do on backend
 func BattleOfInstanceBillingModels(quotas []QuotaSpec) []QuotaSpec {
 	var betterQuotasMap map[string]*QuotaSpec = make(map[string]*QuotaSpec)
-	alwaysWinsBillingModel := "standard"
+	alwaysWinsBillingModel := "marketplace"
 	for i := 0; i < len(quotas); i++ {
 		if quotas[i].BillingModel == alwaysWinsBillingModel {
 			betterQuotasMap[quotas[i].Name] = &quotas[i]
@@ -139,25 +153,6 @@ func GetOrganizationID(ctx context.Context, conn connection.Connection) (account
 	}
 
 	return account.Organization.GetId(), nil
-}
-
-func GetValidMarketplaceAcctIDs(quotaCostList *amsclient.QuotaCostList, marketplace string) (marketplaceAcctIDs []string, err error) {
-
-	for _, quota := range quotaCostList.GetItems() {
-		if len(quota.GetCloudAccounts()) > 0 {
-			for _, cloudAccount := range quota.GetCloudAccounts() {
-				if marketplace != "" {
-					if cloudAccount.GetCloudProviderId() == marketplace {
-						marketplaceAcctIDs = append(marketplaceAcctIDs, cloudAccount.GetCloudAccountId())
-					}
-				} else {
-					marketplaceAcctIDs = append(marketplaceAcctIDs, cloudAccount.GetCloudAccountId())
-				}
-			}
-		}
-	}
-
-	return unique(marketplaceAcctIDs), err
 }
 
 func GetValidMarketplaces(quotaCostList *amsclient.QuotaCostList) (marketplaces []string, err error) {

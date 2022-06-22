@@ -54,6 +54,35 @@ func FetchValidKafkaSizesLabels(f *factory.Factory,
 
 }
 
+func FetchValidMarketplaces(userInstanceType *accountmgmtutil.QuotaSpec) (marketplaces []string, err error) {
+
+	if userInstanceType.CloudAccounts != nil {
+		for _, cloudAccount := range *userInstanceType.CloudAccounts {
+			marketplaces = append(marketplaces, cloudAccount.GetCloudProviderId())
+		}
+	}
+
+	return unique(marketplaces), err
+}
+
+func FetchValidMarketplaceAccountIDs(userInstanceType *accountmgmtutil.QuotaSpec, marketplace string) (marketplaceAcctIDs []string, err error) {
+
+	if *userInstanceType.CloudAccounts != nil {
+		for _, cloudAccount := range *userInstanceType.CloudAccounts {
+
+			if marketplace != "" {
+				if cloudAccount.GetCloudProviderId() == marketplace {
+					marketplaceAcctIDs = append(marketplaceAcctIDs, cloudAccount.GetCloudAccountId())
+				}
+			} else {
+				marketplaceAcctIDs = append(marketplaceAcctIDs, cloudAccount.GetCloudAccountId())
+			}
+		}
+	}
+
+	return unique(marketplaceAcctIDs), err
+}
+
 // return list of the valid instance sizes for the specified region and ams instance types
 func FetchValidKafkaSizes(f *factory.Factory,
 	providerID string, regionId string, amsType accountmgmtutil.QuotaSpec) ([]kafkamgmtclient.SupportedKafkaSize, error) {
@@ -167,4 +196,16 @@ func IsRegionAllowed(region *kafkamgmtclient.CloudRegion, userInstanceType *acco
 		}
 	}
 	return false
+}
+
+func unique(s []string) []string {
+	inResult := make(map[string]bool)
+	var result []string
+	for _, str := range s {
+		if _, ok := inResult[str]; !ok {
+			inResult[str] = true
+			result = append(result, str)
+		}
+	}
+	return result
 }
