@@ -2,6 +2,8 @@ package contextutil
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/redhat-developer/app-services-cli/pkg/core/localize"
 	"github.com/redhat-developer/app-services-cli/pkg/core/servicecontext"
@@ -106,7 +108,7 @@ func GetRegistryForServiceConfig(currCtx *servicecontext.ServiceConfig, f *facto
 	}
 
 	registryInstance, _, err := conn.API().ServiceRegistryMgmt().GetRegistry(context.Background(), currCtx.ServiceRegistryID).Execute()
-	if srsmgmtv1errors.IsAPIError(err, srsmgmtv1errors.ERROR_2) {
+	if isAPIError(err, srsmgmtv1errors.ERROR_2) {
 		return nil, f.Localizer.MustLocalizeError("context.common.error.registry.notFound")
 	}
 
@@ -220,4 +222,42 @@ func SetCurrentNamespaceInstance(namespace *connectormgmtclient.ConnectorNamespa
 	}
 
 	return nil
+}
+
+func getAPIError(err error) *registrymgmtclient.Error {
+	var openapiError registrymgmtclient.GenericOpenAPIError
+
+	if ok := errors.As(err, &openapiError); ok {
+
+		fmt.Println("openapi error - ", openapiError)
+
+		errModel := openapiError.Model()
+
+		fmt.Println("openapi error model - ", errModel)
+
+		transformedError, ok := errModel.(registrymgmtclient.Error)
+		if !ok {
+			fmt.Println("inside is ok transformed")
+			return nil
+		}
+		return &transformedError
+	}
+
+	return nil
+}
+
+// IsAPIError returns true if the error contains the errCode
+func isAPIError(err error, code string) bool {
+
+	fmt.Println("inside is api error")
+	mappedErr := getAPIError(err)
+
+	fmt.Println("mapped error - ", mappedErr)
+	if mappedErr == nil {
+		return false
+	}
+
+	fmt.Println("mapped error - ", mappedErr)
+
+	return mappedErr.GetCode() == string(code)
 }

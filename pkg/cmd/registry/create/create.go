@@ -2,6 +2,7 @@ package create
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/redhat-developer/app-services-cli/pkg/cmd/registry/registrycmdutil"
@@ -23,6 +24,8 @@ import (
 
 	srsmgmtv1 "github.com/redhat-developer/app-services-sdk-go/registrymgmt/apiv1/client"
 	srsmgmtv1errors "github.com/redhat-developer/app-services-sdk-go/registrymgmt/apiv1/error"
+
+	registrymgmtclient "github.com/redhat-developer/app-services-sdk-go/registrymgmt/apiv1/client"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"
@@ -194,16 +197,22 @@ func runCreate(opts *options) error {
 }
 
 func handleErrors(err error, opts *options) error {
+
+	fmt.Println("inside handle errors")
 	if srsmgmtv1errors.IsAPIError(err, srsmgmtv1errors.ERROR_7) {
 		return opts.localizer.MustLocalizeError("registry.cmd.create.error.limitreached")
 	}
-	if srsmgmtv1errors.IsAPIError(err, srsmgmtv1errors.ERROR_13) {
+	if isAPIError(err, srsmgmtv1errors.ERROR_13) {
+
+		fmt.Println("inside error 13")
 		return opts.localizer.MustLocalizeError("registry.cmd.create.error.trial.limitreached")
 	}
 	if srsmgmtv1errors.IsAPIError(err, srsmgmtv1errors.ERROR_14) {
 		return opts.localizer.MustLocalizeError("registry.cmd.create.error.global.limitreached")
 	}
 	if err != nil {
+
+		fmt.Println("inside not nil")
 		return err
 	}
 	return nil
@@ -272,4 +281,42 @@ func checkTermsAccepted(opts *options, conn connection.Connection) (err error) {
 	}
 
 	return nil
+}
+
+func getAPIError(err error) *registrymgmtclient.Error {
+	var openapiError registrymgmtclient.GenericOpenAPIError
+
+	if ok := errors.As(err, &openapiError); ok {
+
+		fmt.Println("openapi error - ", openapiError)
+
+		errModel := openapiError.Model()
+
+		fmt.Println("openapi error model - ", errModel)
+
+		transformedError, ok := errModel.(registrymgmtclient.Error)
+		if !ok {
+			fmt.Println("inside is ok transformed")
+			return nil
+		}
+		return &transformedError
+	}
+
+	return nil
+}
+
+// IsAPIError returns true if the error contains the errCode
+func isAPIError(err error, code string) bool {
+
+	fmt.Println("inside is api error")
+	mappedErr := getAPIError(err)
+
+	fmt.Println("mapped error - ", mappedErr)
+	if mappedErr == nil {
+		return false
+	}
+
+	fmt.Println("mapped error - ", mappedErr)
+
+	return mappedErr.GetCode() == string(code)
 }
